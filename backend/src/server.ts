@@ -8,7 +8,7 @@ import { globalLimiter, authLimiter } from './middleware/rateLimiter';
 import authRoutes from './routes/auth';
 import productRoutes from './routes/products';
 import orderRoutes from './routes/orders';
-import paymentRoutes from './routes/payments';
+//import paymentRoutes from './routes/payments';
 import userRoutes from './routes/users';
 import reviewRoutes from './routes/reviews';
 import wishlistRoutes from './routes/wishlist';
@@ -25,12 +25,15 @@ app.use(cors({ origin: process.env.FRONTEND_URL, credentials: true }));
 app.use(express.json());
 
 // Routes
+app.get('/', (_, res) => {
+  res.send('API running');
+});
 app.use('/api', globalLimiter);
 app.use('/api/auth', authLimiter);
 app.use('/api/auth', authRoutes);
 app.use('/api/products', productRoutes);
 app.use('/api/orders', orderRoutes);
-app.use('/api/payments', paymentRoutes);
+//app.use('/api/payments', paymentRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/reviews', reviewRoutes);
 app.use('/api/wishlist', wishlistRoutes);
