@@ -1,0 +1,44 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+const express_1 = require("express");
+const client_1 = require("@prisma/client");
+const auth_1 = require("../middleware/auth");
+const router = (0, express_1.Router)();
+const prisma = new client_1.PrismaClient();
+// GET /api/products
+router.get('/', async (req, res) => {
+    const { search, category, page = '1', limit = '20' } = req.query;
+    const skip = (Number(page) - 1) * Number(limit);
+    const where = { active: true };
+    if (search)
+        where.name = { contains: String(search), mode: 'insensitive' };
+    if (category)
+        where.category = String(category);
+    const [products, total] = await Promise.all([
+        prisma.product.findMany({ where, skip, take: Number(limit), include: { reviews: true }, orderBy: { createdAt: 'desc' } }),
+        prisma.product.count({ where }),
+    ]);
+    res.json({ products, total, pages: Math.ceil(total / Number(limit)) });
+});
+// GET /api/products/:slug
+router.get('/:slug', async (req, res) => {
+    const product = await prisma.product.findUnique({
+        where: { slug: req.params.slug },
+        include: { reviews: { include: { user: { select: { name: true } } } }, variants: true },
+    });
+    if (!product)
+        return res.status(404).json({ error: 'Produit non trouvé' });
+    res.json(product);
+});
+// POST /api/products — Admin only
+router.post('/', auth_1.authenticate, auth_1.isAdmin, async (req, res) => {
+    const product = await prisma.product.create({ data: req.body });
+    res.status(201).json(product);
+});
+// PUT /api/products/:id
+router.put('/:id', auth_1.authenticate, auth_1.isAdmin, async (req, res) => {
+    const product = await prisma.product.update({ where: { id: req.params.id }, data: req.body });
+    res.json(product);
+});
+exports.default = router;
+//# sourceMappingURL=products.js.map

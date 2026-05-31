@@ -37,7 +37,7 @@ router.post('/', authenticate, isAdmin, async (req: AuthRequest, res) => {
 
 // PUT /api/products/:id
 router.put('/:id', authenticate, isAdmin, async (req: AuthRequest, res) => {
-  const product = await prisma.product.update({ where: { id: req.params.id }, data: req.body });
+  const product = await prisma.product.update({ where: { id: req.params.id as string }, data: req.body });
   res.json(product);
 });
 
