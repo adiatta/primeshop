@@ -141,10 +141,10 @@ export default function HomePage() {
             <div className="flex items-center gap-1.5">
               <Stars rating={PRODUCT.rating} size={15} />
               <span className="font-bold">{PRODUCT.rating}</span>
-              <span className="text-[#8b96b0]">({PRODUCT.reviews.toLocaleString()} avis)</span>
+              <span className="text-[#8b96b0]">({PRODUCT.reviews.toLocaleString('fr-FR')} avis)</span>
             </div>
             <span className="text-[#1e2433]">|</span>
-            <span className="text-[#8b96b0]">🔥 {PRODUCT.sold.toLocaleString()} vendus</span>
+            <span className="text-[#8b96b0]">🔥 {PRODUCT.sold.toLocaleString('fr-FR')} vendus</span>
             <span className="text-[#1e2433]">|</span>
             <span className="text-green-400">✓ En stock · {PRODUCT.stock} restants</span>
           </div>
@@ -232,7 +232,7 @@ export default function HomePage() {
             <div className="flex items-center gap-3 text-sm mb-6 flex-wrap">
               <Stars rating={PRODUCT.rating} />
               <span className="font-bold">{PRODUCT.rating}</span>
-              <span className="text-[#8b96b0]">({PRODUCT.reviews.toLocaleString()} avis)</span>
+              <span className="text-[#8b96b0]">({PRODUCT.reviews.toLocaleString('fr-FR')} avis)</span>
               <span className="text-green-400">· {PRODUCT.stock} en stock</span>
             </div>
 
@@ -375,7 +375,7 @@ export default function HomePage() {
             <div className="flex items-center justify-center gap-3 flex-wrap">
               <Stars rating={PRODUCT.rating} size={20} />
               <span className="text-4xl font-black">{PRODUCT.rating}</span>
-              <span className="text-[#8b96b0]">sur 5 · {PRODUCT.reviews.toLocaleString()} avis vérifiés</span>
+              <span className="text-[#8b96b0]">sur 5 · {PRODUCT.reviews.toLocaleString('fr-FR')} avis vérifiés</span>
             </div>
           </div>
 
