@@ -39,7 +39,12 @@ app.use('/api/reviews', reviewRoutes);
 app.use('/api/wishlist', wishlistRoutes);
 app.use('/api/promo', promoRoutes);
 app.use('/api/admin', adminRoutes);
-
+app.get('/api/health', (req, res) => {
+  res.json({
+    status: 'ok',
+    message: 'PrimeShop API running'
+  });
+});
 app.use(errorHandler);
 
 app.listen(PORT, () => console.log(`✅ Server running on port ${PORT}`));
