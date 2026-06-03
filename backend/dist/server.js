@@ -56,7 +56,9 @@ app.use('/api/wishlist', wishlist_1.default);
 app.use('/api/promo', promo_1.default);
 app.use('/api/admin', admin_1.default);
 // ── 404 ────────────────────────────────────────────────────
-app.use('*', (_, res) => res.status(404).json({ error: 'Route introuvable' }));
+app.use((_, res) => {
+    res.status(404).json({ error: 'Route introuvable' });
+});
 // ── Error handler ──────────────────────────────────────────
 app.use(errorHandler_1.errorHandler);
 // ── Start ──────────────────────────────────────────────────
