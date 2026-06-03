@@ -61,7 +61,9 @@ app.use('/api/promo',    promoRoutes);
 app.use('/api/admin',    adminRoutes);
 
 // ── 404 ────────────────────────────────────────────────────
-app.use('*', (_, res) => res.status(404).json({ error: 'Route introuvable' }));
+app.use((_, res) => {
+  res.status(404).json({ error: 'Route introuvable' });
+});
 
 // ── Error handler ──────────────────────────────────────────
 app.use(errorHandler);
