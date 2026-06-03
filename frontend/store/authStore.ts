@@ -13,6 +13,8 @@ interface AuthStore {
 }
 
 const API = process.env.NEXT_PUBLIC_API_URL;
+console.log("API URL =", API);
+
 
 export const useAuthStore = create<AuthStore>()(
   persist(
