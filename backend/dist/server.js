@@ -8,6 +8,14 @@ const cors_1 = __importDefault(require("cors"));
 const helmet_1 = __importDefault(require("helmet"));
 const compression_1 = __importDefault(require("compression"));
 const dotenv_1 = __importDefault(require("dotenv"));
+dotenv_1.default.config();
+// ── Vérification env au démarrage ──────────────────────────
+const REQUIRED_ENV = ['DATABASE_URL', 'JWT_SECRET', 'STRIPE_SECRET_KEY'];
+const missing = REQUIRED_ENV.filter(k => !process.env[k]);
+if (missing.length) {
+    console.error('❌ Variables d\'environnement manquantes :', missing.join(', '));
+    process.exit(1);
+}
 const errorHandler_1 = require("./middleware/errorHandler");
 const rateLimiter_1 = require("./middleware/rateLimiter");
 const auth_1 = __importDefault(require("./routes/auth"));
@@ -19,19 +27,25 @@ const reviews_1 = __importDefault(require("./routes/reviews"));
 const wishlist_1 = __importDefault(require("./routes/wishlist"));
 const promo_1 = __importDefault(require("./routes/promo"));
 const admin_1 = __importDefault(require("./routes/admin"));
-dotenv_1.default.config();
 const app = (0, express_1.default)();
-const PORT = process.env.PORT || 5000;
+const PORT = parseInt(process.env.PORT || '5000', 10);
+// ── Middlewares ────────────────────────────────────────────
 app.use((0, helmet_1.default)());
 app.use((0, compression_1.default)());
-app.use((0, cors_1.default)({ origin: process.env.FRONTEND_URL, credentials: true }));
-app.use(express_1.default.json());
-// Routes
-app.get('/', (_, res) => {
-    res.send('API running');
-});
+app.use((0, cors_1.default)({
+    origin: process.env.FRONTEND_URL || '*',
+    credentials: true,
+}));
+// Stripe webhook AVANT express.json (besoin du raw body)
+app.use('/api/payments/webhook', express_1.default.raw({ type: 'application/json' }));
+app.use(express_1.default.json({ limit: '10mb' }));
+// Rate limiting
 app.use('/api', rateLimiter_1.globalLimiter);
 app.use('/api/auth', rateLimiter_1.authLimiter);
+// ── Health check (Railway ping) ────────────────────────────
+app.get('/health', (_, res) => res.json({ status: 'ok', env: process.env.NODE_ENV }));
+app.get('/', (_, res) => res.json({ message: 'PrimeShop API v1.0' }));
+// ── Routes ─────────────────────────────────────────────────
 app.use('/api/auth', auth_1.default);
 app.use('/api/products', products_1.default);
 app.use('/api/orders', orders_1.default);
@@ -41,13 +55,14 @@ app.use('/api/reviews', reviews_1.default);
 app.use('/api/wishlist', wishlist_1.default);
 app.use('/api/promo', promo_1.default);
 app.use('/api/admin', admin_1.default);
-app.get('/api/health', (req, res) => {
-    res.json({
-        status: 'ok',
-        message: 'PrimeShop API running'
-    });
-});
+// ── 404 ────────────────────────────────────────────────────
+app.use('*', (_, res) => res.status(404).json({ error: 'Route introuvable' }));
+// ── Error handler ──────────────────────────────────────────
 app.use(errorHandler_1.errorHandler);
-app.listen(PORT, () => console.log(`✅ Server running on port ${PORT}`));
+// ── Start ──────────────────────────────────────────────────
+app.listen(PORT, '0.0.0.0', () => {
+    console.log(`✅ PrimeShop API démarré sur le port ${PORT}`);
+    console.log(`🌍 Environnement : ${process.env.NODE_ENV}`);
+});
 exports.default = app;
 //# sourceMappingURL=server.js.map
