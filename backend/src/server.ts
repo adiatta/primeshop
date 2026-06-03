@@ -33,7 +33,10 @@ const PORT = parseInt(process.env.PORT || '5000', 10);
 app.use(helmet());
 app.use(compression() as any);
 app.use(cors({
-  origin: process.env.FRONTEND_URL || '*',
+  origin: [
+    "http://localhost:3000",
+    "https://frontend-navy-omega-55.vercel.app"
+  ],
   credentials: true,
 }));
 
@@ -69,6 +72,8 @@ app.use((_, res) => {
 app.use(errorHandler);
 
 // ── Start ──────────────────────────────────────────────────
+
+console.log("Avant app.listen");
 app.listen(PORT, '0.0.0.0', () => {
   console.log(`✅ PrimeShop API démarré sur le port ${PORT}`);
   console.log(`🌍 Environnement : ${process.env.NODE_ENV}`);
