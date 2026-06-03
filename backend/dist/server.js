@@ -27,6 +27,9 @@ app.use((0, compression_1.default)());
 app.use((0, cors_1.default)({ origin: process.env.FRONTEND_URL, credentials: true }));
 app.use(express_1.default.json());
 // Routes
+app.get('/', (_, res) => {
+    res.send('API running');
+});
 app.use('/api', rateLimiter_1.globalLimiter);
 app.use('/api/auth', rateLimiter_1.authLimiter);
 app.use('/api/auth', auth_1.default);
@@ -38,6 +41,12 @@ app.use('/api/reviews', reviews_1.default);
 app.use('/api/wishlist', wishlist_1.default);
 app.use('/api/promo', promo_1.default);
 app.use('/api/admin', admin_1.default);
+app.get('/api/health', (req, res) => {
+    res.json({
+        status: 'ok',
+        message: 'PrimeShop API running'
+    });
+});
 app.use(errorHandler_1.errorHandler);
 app.listen(PORT, () => console.log(`✅ Server running on port ${PORT}`));
 exports.default = app;
