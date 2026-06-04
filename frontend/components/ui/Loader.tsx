@@ -1,3 +1,4 @@
+'use client';
 export function Loader({ size = 40, text }: { size?: number; text?: string }) {
   return (
     <div className="flex flex-col items-center justify-center gap-4">

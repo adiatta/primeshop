@@ -1,3 +1,4 @@
+// frontend/store/uiStore.ts
 import { create } from 'zustand';
 
 interface UIStore {
@@ -12,12 +13,12 @@ interface UIStore {
 }
 
 export const useUIStore = create<UIStore>((set) => ({
-  authOpen:  false,
-  authMode:  'login',
-  cartOpen:  false,
-  openAuth:  (mode = 'login') => set({ authOpen: true, authMode: mode }),
-  closeAuth: () => set({ authOpen: false }),
+  authOpen:    false,
+  authMode:    'login',
+  cartOpen:    false,
+  openAuth:    (mode = 'login') => set({ authOpen: true, authMode: mode }),
+  closeAuth:   () => set({ authOpen: false }),
   setAuthMode: (mode) => set({ authMode: mode }),
-  openCart:  () => set({ cartOpen: true }),
-  closeCart: () => set({ cartOpen: false }),
+  openCart:    () => set({ cartOpen: true }),
+  closeCart:   () => set({ cartOpen: false }),
 }));

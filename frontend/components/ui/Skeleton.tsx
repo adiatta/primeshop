@@ -1,3 +1,4 @@
+'use client';
 interface SkeletonProps {
   className?: string;
   width?: string | number;

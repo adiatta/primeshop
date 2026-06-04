@@ -5,6 +5,7 @@ import { useUIStore }   from '@/store/uiStore';
 import { useAuthStore } from '@/store/authStore';
 import { useCartStore } from '@/store/cartStore';
 
+
 export function Navbar() {
   const [scrolled, setScrolled] = useState(false);
   const { openAuth, openCart } = useUIStore();

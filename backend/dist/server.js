@@ -33,7 +33,10 @@ const PORT = parseInt(process.env.PORT || '5000', 10);
 app.use((0, helmet_1.default)());
 app.use((0, compression_1.default)());
 app.use((0, cors_1.default)({
-    origin: process.env.FRONTEND_URL || '*',
+    origin: [
+        "http://localhost:3000",
+        "https://frontend-navy-omega-55.vercel.app"
+    ],
     credentials: true,
 }));
 // Stripe webhook AVANT express.json (besoin du raw body)
@@ -62,6 +65,7 @@ app.use((_, res) => {
 // ── Error handler ──────────────────────────────────────────
 app.use(errorHandler_1.errorHandler);
 // ── Start ──────────────────────────────────────────────────
+console.log("Avant app.listen");
 app.listen(PORT, '0.0.0.0', () => {
     console.log(`✅ PrimeShop API démarré sur le port ${PORT}`);
     console.log(`🌍 Environnement : ${process.env.NODE_ENV}`);
