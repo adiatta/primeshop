@@ -28,6 +28,19 @@ router.get('/stats', async (req, res) => {
   });
 });
 
+// GET /api/admin/users
+router.get('/users', async (req, res) => {
+  const users = await prisma.user.findMany({
+    select: {
+      id: true, name: true, email: true,
+      role: true, createdAt: true,
+      _count: { select: { orders: true } },
+    },
+    orderBy: { createdAt: 'desc' },
+  });
+  res.json(users);
+});
+
 // GET /api/admin/orders
 router.get('/orders', async (req, res) => {
   const { status, page = '1', limit = '20' } = req.query;
