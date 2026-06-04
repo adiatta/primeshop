@@ -1,47 +1,58 @@
+'use strict';
 const { PrismaClient } = require('@prisma/client');
 const bcrypt = require('bcryptjs');
 
-const prisma = new PrismaClient();
-
 async function main() {
-  console.log('🌱 Seeding...');
+  // Connexion explicite avec log
+  const prisma = new PrismaClient({
+    log: ['query', 'info', 'warn', 'error'],
+  });
 
-  const adminHash = await bcrypt.hash('admin123456', 12);
-  const userHash  = await bcrypt.hash('user123456', 12);
+  console.log('🔗 Connexion à la BDD...');
+  await prisma.$connect();
+  console.log('✅ Connecté');
 
-  await prisma.user.upsert({
+  const adminHash = await bcrypt.hash('admin123456', 10);
+  const testHash  = await bcrypt.hash('user123456', 10);
+
+  const admin = await prisma.user.upsert({
     where:  { email: 'admin@primeshop.fr' },
-    update: { password: adminHash },
-    create: { email: 'admin@primeshop.fr', password: adminHash, name: 'Admin', role: 'ADMIN' },
-  });
-
-  await prisma.user.upsert({
-    where:  { email: 'test@primeshop.fr' },
-    update: { password: userHash },
-    create: { email: 'test@primeshop.fr', password: userHash, name: 'Test User', role: 'USER' },
-  });
-
-  await prisma.product.upsert({
-    where:  { slug: 'primelens-pro-x1' },
-    update: {},
+    update: { password: adminHash, role: 'ADMIN' },
     create: {
-      name: 'PrimeLens Pro X1', slug: 'primelens-pro-x1',
-      description: 'La caméra de poche qui redéfinit la perfection.',
-      price: 249, comparePrice: 399,
-      images: ['https://images.unsplash.com/photo-1525547719571-a2d4ac8945e2?w=800'],
-      stock: 47, category: 'Tech', tags: ['camera', 'tech'], featured: true,
+      name:     'Admin',
+      email:    'admin@primeshop.fr',
+      password: adminHash,
+      role:     'ADMIN',
     },
   });
+  console.log('✅ Admin:', admin.email);
+
+  const testUser = await prisma.user.upsert({
+    where:  { email: 'test@primeshop.fr' },
+    update: { password: testHash },
+    create: {
+      name:     'Test User',
+      email:    'test@primeshop.fr',
+      password: testHash,
+      role:     'USER',
+    },
+  });
+  console.log('✅ Test user:', testUser.email);
 
   await prisma.promoCode.upsert({
     where:  { code: 'PRIME15' },
     update: {},
     create: { code: 'PRIME15', discount: 15, type: 'percentage', maxUses: 500, active: true },
   });
+  console.log('✅ Promo PRIME15 créée');
 
-  console.log('✅ Seed OK');
-  console.log('👤 admin@primeshop.fr / admin123456');
-  console.log('👤 test@primeshop.fr  / user123456');
+  await prisma.$disconnect();
+  console.log('🎉 Seed terminé !');
+  console.log('admin@primeshop.fr / admin123456');
+  console.log('test@primeshop.fr  / user123456');
 }
 
-main().catch(console.error).finally(() => prisma.$disconnect());
+main().catch(e => {
+  console.error('❌ Erreur seed:', e);
+  process.exit(1);
+});
