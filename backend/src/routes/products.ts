@@ -30,14 +30,21 @@ router.get('/:slug', async (req, res) => {
 });
 
 // POST /api/products — Admin only
-router.post('/', authenticate, isAdmin, async (req: AuthRequest, res) => {
-  const product = await prisma.product.create({ data: req.body });
+router.post('/', authenticate, isAdmin, async (req, res) => {
+  const product = await prisma.product.create({
+    data: req.body,
+  });
+
   res.status(201).json(product);
 });
 
 // PUT /api/products/:id
-router.put('/:id', authenticate, isAdmin, async (req: AuthRequest, res) => {
-  const product = await prisma.product.update({ where: { id: req.params.id as string }, data: req.body });
+router.put('/:id', authenticate, isAdmin, async (req, res) => {
+  const product = await prisma.product.update({
+    where: { id: req.params.id },
+    data: req.body,
+  });
+
   res.json(product);
 });
 
