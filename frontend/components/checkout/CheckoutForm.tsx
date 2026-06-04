@@ -1,13 +1,16 @@
 'use client';
 import { useState } from 'react';
 import { useStripe, useElements, PaymentElement } from '@stripe/react-stripe-js';
-import { useCartStore } from '@/store/cartStore';
-import { useRouter }    from 'next/navigation';
+import { useCartStore }  from '@/store/cartStore';
+import { useRouter }     from 'next/navigation';
+import { formatPrice }   from '@/lib/utils';
 import toast from 'react-hot-toast';
 
-export function CheckoutForm() {
-  const stripe   = useStripe();
-  const elements = useElements();
+interface Props { total: number; }
+
+export function CheckoutForm({ total }: Props) {
+  const stripe    = useStripe();
+  const elements  = useElements();
   const clearCart = useCartStore(s => s.clearCart);
   const router    = useRouter();
   const [loading, setLoading] = useState(false);
@@ -15,38 +18,74 @@ export function CheckoutForm() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!stripe || !elements) return;
+
     setLoading(true);
+    const loadingToast = toast.loading('Traitement du paiement...');
+
+    // Valider le formulaire Stripe
+    const { error: submitError } = await elements.submit();
+    if (submitError) {
+      toast.error(submitError.message ?? 'Erreur formulaire', { id: loadingToast });
+      setLoading(false);
+      return;
+    }
 
     const { error } = await stripe.confirmPayment({
       elements,
       confirmParams: {
         return_url: `${window.location.origin}/dashboard?payment=success`,
       },
+      redirect: 'if_required', // évite la redirection si pas nécessaire
     });
 
     if (error) {
-      toast.error(error.message ?? 'Erreur lors du paiement');
+      toast.error(error.message ?? 'Paiement refusé', { id: loadingToast });
+      setLoading(false);
     } else {
+      toast.success('Paiement réussi ! 🎉', { id: loadingToast });
       clearCart();
-      toast.success('Paiement réussi ! 🎉');
-      router.push('/dashboard');
+      router.push('/dashboard?payment=success');
     }
-    setLoading(false);
   };
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
-      <div className="bg-[#161a22] border border-[#1e2433] rounded-2xl p-6">
-        <h2 className="font-bold text-white mb-5 text-lg">Informations de paiement</h2>
-        <PaymentElement options={{ layout: 'tabs' }} />
-      </div>
-      <button type="submit" disabled={loading || !stripe}
-        className="w-full py-4 rounded-xl font-bold text-white text-base border-none cursor-pointer disabled:opacity-50 transition hover:opacity-90"
-        style={{ background: 'linear-gradient(135deg,#2563eb,#1d4ed8)' }}>
-        {loading ? 'Traitement en cours...' : '🔒 Payer maintenant'}
+      {/* PaymentElement Stripe — rendu automatiquement */}
+      <PaymentElement
+        options={{
+          layout: {
+            type: 'tabs',
+            defaultCollapsed: false,
+          },
+          fields: {
+            billingDetails: {
+              name:    'auto',
+              email:   'auto',
+              address: 'never', // simplifier le formulaire
+            },
+          },
+        }}
+      />
+
+      {/* Bouton payer */}
+      <button
+        type="submit"
+        disabled={loading || !stripe || !elements}
+        className="w-full py-4 rounded-xl font-bold text-white text-base border-none cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed transition hover:opacity-90"
+        style={{ background: 'linear-gradient(135deg,#2563eb,#1d4ed8)' }}
+      >
+        {loading
+          ? <span className="flex items-center justify-center gap-2">
+              <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+              Traitement...
+            </span>
+          : `🔒 Payer ${formatPrice(total)}`
+        }
       </button>
+
       <p className="text-center text-xs text-[#8b96b0]">
-        Paiement sécurisé · Crypté SSL · Aucune donnée bancaire stockée
+        Vos données bancaires sont chiffrées et sécurisées par Stripe.
+        PrimeShop ne stocke jamais vos informations de carte.
       </p>
     </form>
   );
