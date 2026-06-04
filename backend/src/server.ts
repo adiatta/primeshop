@@ -26,6 +26,8 @@ import wishlistRoutes from './routes/wishlist';
 import promoRoutes    from './routes/promo';
 import adminRoutes    from './routes/admin';
 import { startCronJobs } from './jobs/cronJobs';
+import passport from './config/passport';
+
 
 
 const app  = express();
@@ -45,6 +47,8 @@ app.use(cors({
 // Stripe webhook AVANT express.json (besoin du raw body)
 app.use('/api/payments/webhook', express.raw({ type: 'application/json' }));
 app.use(express.json({ limit: '10mb' }));
+app.use(passport.initialize());
+
 
 // Rate limiting
 app.use('/api', globalLimiter);

@@ -101,5 +101,26 @@ router.post('/dropshipping/sync-tracking', async (req, res) => {
     await orderTrackingService_1.trackingService.syncAllTracking();
     res.json({ message: 'Tracking synchronisé' });
 });
+// GET /api/admin/promos
+router.get('/promos', async (req, res) => {
+    const promos = await prisma.promoCode.findMany({ orderBy: { createdAt: 'desc' } });
+    res.json(promos);
+});
+// POST /api/admin/promos
+router.post('/promos', async (req, res) => {
+    const { code, discount, type, maxUses, expiresAt } = req.body;
+    const promo = await prisma.promoCode.create({
+        data: { code, discount, type: type || 'percentage', maxUses, expiresAt: expiresAt ? new Date(expiresAt) : null, active: true },
+    });
+    res.status(201).json(promo);
+});
+// PATCH /api/admin/promos/:code
+router.patch('/promos/:code', async (req, res) => {
+    const promo = await prisma.promoCode.update({
+        where: { code: req.params.code },
+        data: req.body,
+    });
+    res.json(promo);
+});
 exports.default = router;
 //# sourceMappingURL=admin.js.map

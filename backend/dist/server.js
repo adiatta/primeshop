@@ -27,6 +27,7 @@ const reviews_1 = __importDefault(require("./routes/reviews"));
 const wishlist_1 = __importDefault(require("./routes/wishlist"));
 const promo_1 = __importDefault(require("./routes/promo"));
 const admin_1 = __importDefault(require("./routes/admin"));
+const cronJobs_1 = require("./jobs/cronJobs");
 const app = (0, express_1.default)();
 const PORT = parseInt(process.env.PORT || '5000', 10);
 // ── Middlewares ────────────────────────────────────────────
@@ -70,5 +71,6 @@ app.listen(PORT, '0.0.0.0', () => {
     console.log(`✅ PrimeShop API démarré sur le port ${PORT}`);
     console.log(`🌍 Environnement : ${process.env.NODE_ENV}`);
 });
+(0, cronJobs_1.startCronJobs)();
 exports.default = app;
 //# sourceMappingURL=server.js.map

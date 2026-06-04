@@ -2,6 +2,8 @@ import { Router } from 'express';
 import { PrismaClient } from '@prisma/client';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
+import passport from '../config/passport';
+
 
 const router = Router();
 const prisma = new PrismaClient();
@@ -58,6 +60,42 @@ router.post('/login', async (req, res) => {
   }
 });
 
+
+// GET /api/auth/google — Lance le flow OAuth
+router.get('/google',
+  passport.authenticate('google', {
+    scope: ['profile', 'email'],
+    session: false,
+  })
+);
+
+
+// GET /api/auth/google/callback — Google redirige ici
+router.get('/google/callback',
+  passport.authenticate('google', { session: false, failureRedirect: `${process.env.FRONTEND_URL}/auth/error` }),
+  (req, res) => {
+    const user = req.user as any;
+
+    // Générer JWT
+    const token = jwt.sign(
+      { id: user.id, role: user.role },
+      process.env.JWT_SECRET!,
+      { expiresIn: '7d' }
+    );
+
+    // Rediriger vers le frontend avec le token
+    const userData = encodeURIComponent(JSON.stringify({
+      id:    user.id,
+      name:  user.name,
+      email: user.email,
+      role:  user.role,
+    }));
+
+    res.redirect(
+      `${process.env.FRONTEND_URL}/auth/callback?token=${token}&user=${userData}`
+    );
+  }
+);
 
 // ROUTE TEMPORAIRE — À SUPPRIMER APRÈS UTILISATION
 // POST /api/auth/setup-admin
