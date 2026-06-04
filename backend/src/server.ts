@@ -25,6 +25,8 @@ import reviewRoutes   from './routes/reviews';
 import wishlistRoutes from './routes/wishlist';
 import promoRoutes    from './routes/promo';
 import adminRoutes    from './routes/admin';
+import { startCronJobs } from './jobs/cronJobs';
+
 
 const app  = express();
 const PORT = parseInt(process.env.PORT || '5000', 10);
@@ -78,5 +80,7 @@ app.listen(PORT, '0.0.0.0', () => {
   console.log(`✅ PrimeShop API démarré sur le port ${PORT}`);
   console.log(`🌍 Environnement : ${process.env.NODE_ENV}`);
 });
+
+startCronJobs();
 
 export default app;
