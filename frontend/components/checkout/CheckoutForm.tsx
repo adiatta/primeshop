@@ -31,12 +31,18 @@ export function CheckoutForm({ total }: Props) {
     }
 
     const { error } = await stripe.confirmPayment({
-      elements,
-      confirmParams: {
-        return_url: `${window.location.origin}/dashboard?payment=success`,
+  elements,
+  confirmParams: {
+    return_url: `${window.location.origin}/success`,
+    payment_method_data: {
+      billing_details: {
+        address: {
+          country: 'FR',
+        },
       },
-      redirect: 'if_required', // évite la redirection si pas nécessaire
-    });
+    },
+  },
+});
 
     if (error) {
       toast.error(error.message ?? 'Paiement refusé', { id: loadingToast });
@@ -61,7 +67,7 @@ export function CheckoutForm({ total }: Props) {
             billingDetails: {
               name:    'auto',
               email:   'auto',
-              address: 'never', // simplifier le formulaire
+             address: 'auto', // simplifier le formulaire
             },
           },
         }}
