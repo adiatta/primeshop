@@ -187,7 +187,7 @@ export default function CheckoutPage() {
           {step === 2 && (
             <div className="bg-[#111318] border border-[#1e2433] rounded-2xl p-6 sm:p-8">
               <div className="flex items-center gap-3 mb-6">
-                <button onClick={() => setStep(1)} className="text-[#8b96b0] hover:text-white transition text-sm bg-transparent border-none cursor-pointer">← Modifier l'adresse</button>
+                <button onClick={() => setStep(1)} className="text-[#8b96b0] hover:text-white transition text-sm bg-transparent border-none cursor-pointer">← Modifier ladresse</button>
               </div>
 
               {/* Adresse récapitulée */}

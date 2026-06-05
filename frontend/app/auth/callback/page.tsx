@@ -2,6 +2,8 @@
 import { useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuthStore } from '@/store/authStore';
+import { Suspense } from 'react';
+import AuthCallbackClient from './AuthCallbackClient';
 import toast from 'react-hot-toast';
 
 export default function AuthCallbackPage() {
@@ -31,11 +33,12 @@ export default function AuthCallbackPage() {
   }, []);
 
   return (
-    <div className="min-h-screen bg-[#0a0c10] flex items-center justify-center">
-      <div className="text-center">
-        <div className="w-10 h-10 border-2 border-[#1e2433] border-t-blue-500 rounded-full animate-spin mx-auto mb-4" />
-        <p className="text-[#8b96b0] text-sm">Connexion en cours...</p>
+    <Suspense fallback={
+      <div className="min-h-screen bg-[#0a0c10] flex items-center justify-center">
+        <div className="w-10 h-10 border-2 border-[#1e2433] border-t-blue-500 rounded-full animate-spin" />
       </div>
-    </div>
+    }>
+      <AuthCallbackClient />
+    </Suspense>
   );
 }

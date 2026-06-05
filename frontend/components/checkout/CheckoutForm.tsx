@@ -6,9 +6,23 @@ import { useRouter }     from 'next/navigation';
 import { formatPrice }   from '@/lib/utils';
 import toast from 'react-hot-toast';
 
-interface Props { total: number; }
+interface AddressForm {
+  firstName: string;
+  lastName: string;
+  email: string;
+  phone: string;
+  street: string;
+  city: string;
+  postalCode: string;
+  country: string;
+}
 
-export function CheckoutForm({ total }: Props) {
+interface Props {
+  total: number;
+  address: AddressForm;
+}
+
+export function CheckoutForm({ total, address }: Props) {
   const stripe    = useStripe();
   const elements  = useElements();
   const clearCart = useCartStore(s => s.clearCart);
