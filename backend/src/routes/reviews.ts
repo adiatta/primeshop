@@ -16,15 +16,24 @@ router.get('/:productId', async (req, res) => {
 });
 
 // POST /api/reviews
-router.post('/', authenticate, async (req: AuthRequest, res) => {
+router.post('/', authenticate, async (req, res) => {
+  const authReq = req as AuthRequest;
   const { productId, rating, comment } = req.body;
   const existing = await prisma.review.findFirst({
-    where: { userId: req.user!.id, productId },
+    where: {
+  userId: authReq.user!.id,
+  productId
+},
   });
   if (existing) return res.status(400).json({ error: 'Vous avez déjà laissé un avis' });
 
   const review = await prisma.review.create({
-    data: { userId: req.user!.id, productId, rating, comment },
+   data: {
+  userId: authReq.user!.id,
+  productId,
+  rating,
+  comment
+},
   });
   res.status(201).json(review);
 });

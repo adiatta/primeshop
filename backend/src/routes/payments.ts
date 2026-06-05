@@ -8,7 +8,8 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
 const prisma = new PrismaClient();
 
 // POST /api/payments/create-intent
-router.post('/create-intent', authenticate, async (req: AuthRequest, res) => {
+router.post('/create-intent', authenticate, async (req, res) => {
+  const authReq = req as AuthRequest;
   try {
     const { items, promoCode } = req.body;
     let total = items.reduce((s: number, i: any) => s + i.price * i.quantity, 0);
@@ -25,7 +26,9 @@ router.post('/create-intent', authenticate, async (req: AuthRequest, res) => {
     const paymentIntent = await stripe.paymentIntents.create({
       amount:   Math.round(total * 100),
       currency: 'eur',
-      metadata: { userId: req.user!.id },
+      metadata: {
+  userId: authReq.user!.id
+},
     });
 
     res.json({ clientSecret: paymentIntent.client_secret, total });

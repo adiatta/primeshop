@@ -7,17 +7,19 @@ const router = (0, express_1.Router)();
 const prisma = new client_1.PrismaClient();
 // GET /api/users/me
 router.get('/me', auth_1.authenticate, async (req, res) => {
+    const authReq = req;
     const user = await prisma.user.findUnique({
-        where: { id: req.user.id },
+        where: { id: authReq.user.id },
         select: { id: true, name: true, email: true, role: true, createdAt: true, addresses: true },
     });
     res.json(user);
 });
 // PUT /api/users/me
 router.put('/me', auth_1.authenticate, async (req, res) => {
+    const authReq = req;
     const { name, phone } = req.body;
     const user = await prisma.user.update({
-        where: { id: req.user.id },
+        where: { id: authReq.user.id },
         data: { name, phone },
         select: { id: true, name: true, email: true, phone: true },
     });

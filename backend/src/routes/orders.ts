@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { PrismaClient } from '@prisma/client';
-import { authenticate, AuthRequest } from '../middleware/auth';
+import { authenticate } from '../middleware/auth';
+import type { AuthRequest } from '../middleware/auth';
 import { trackingService } from '../services/orderTrackingService';
 import { cjService } from '../services/dropshippingService';
 
@@ -58,7 +59,7 @@ router.post('/', authenticate, async (req, res) => {
 
   const order = await prisma.order.create({
     data: {
-      userId: req.user!.id,
+      userId: authReq.user!.id,
       addressId,
       subtotal,
       total: subtotal - discount,

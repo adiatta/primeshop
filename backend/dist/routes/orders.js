@@ -37,6 +37,7 @@ router.get('/:id', auth_1.authenticate, async (req, res) => {
 });
 // POST /api/orders — Créer commande (après paiement)
 router.post('/', auth_1.authenticate, async (req, res) => {
+    const authReq = req;
     const { items, addressId, promoCode, stripePaymentId } = req.body;
     const subtotal = items.reduce((s, i) => s + i.price * i.quantity, 0);
     let discount = 0;
@@ -52,7 +53,7 @@ router.post('/', auth_1.authenticate, async (req, res) => {
     }
     const order = await prisma.order.create({
         data: {
-            userId: req.user.id,
+            userId: authReq.user.id,
             addressId,
             subtotal,
             total: subtotal - discount,
@@ -82,8 +83,11 @@ router.post('/', auth_1.authenticate, async (req, res) => {
 });
 // GET /api/orders/:id/tracking — Suivi temps réel
 router.get('/:id/tracking', auth_1.authenticate, async (req, res) => {
+    const authReq = req;
     const order = await prisma.order.findFirst({
-        where: { id: req.params.id, userId: req.user.id },
+        where: {
+            id: String(req.params.id)
+        },
     });
     if (!order)
         return res.status(404).json({ error: 'Commande introuvable' });
@@ -100,8 +104,11 @@ router.get('/:id/tracking', auth_1.authenticate, async (req, res) => {
 });
 // POST /api/orders/:id/cancel
 router.post('/:id/cancel', auth_1.authenticate, async (req, res) => {
+    const authReq = req;
     const order = await prisma.order.findFirst({
-        where: { id: req.params.id, userId: req.user.id },
+        where: {
+            id: String(req.params.id)
+        },
     });
     if (!order)
         return res.status(404).json({ error: 'Commande introuvable' });
