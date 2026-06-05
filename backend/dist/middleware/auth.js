@@ -6,12 +6,15 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.isAdmin = exports.authenticate = void 0;
 const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
 const authenticate = (req, res, next) => {
-    const token = req.headers.authorization?.split(' ')[1];
-    if (!token)
-        return res.status(401).json({ error: 'Non autorisé' });
+    const authReq = req;
+    const token = authReq.headers.authorization?.split(' ')[1];
+    if (!token) {
+        res.status(401).json({ error: 'Non autorisé' });
+        return;
+    }
     try {
         const decoded = jsonwebtoken_1.default.verify(token, process.env.JWT_SECRET);
-        req.user = decoded;
+        authReq.user = decoded;
         next();
     }
     catch {
@@ -20,8 +23,11 @@ const authenticate = (req, res, next) => {
 };
 exports.authenticate = authenticate;
 const isAdmin = (req, res, next) => {
-    if (req.user?.role !== 'ADMIN')
-        return res.status(403).json({ error: 'Accès refusé' });
+    const authReq = req;
+    if (authReq.user?.role !== 'ADMIN') {
+        res.status(403).json({ error: 'Accès refusé' });
+        return;
+    }
     next();
 };
 exports.isAdmin = isAdmin;

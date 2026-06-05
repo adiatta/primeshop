@@ -6,7 +6,7 @@ const router = Router();
 const prisma = new PrismaClient();
 
 // GET /api/products
-router.get('/', async (req, res) => {
+router.get('/', authenticate, async (req, res) => {
   const { search, category, page = '1', limit = '20' } = req.query;
   const skip = (Number(page) - 1) * Number(limit);
   const where: any = { active: true };
@@ -41,7 +41,9 @@ router.post('/', authenticate, isAdmin, async (req, res) => {
 // PUT /api/products/:id
 router.put('/:id', authenticate, isAdmin, async (req, res) => {
   const product = await prisma.product.update({
-    where: { id: req.params.id },
+    where: {
+  id: String(req.params.id)
+},
     data: req.body,
   });
 

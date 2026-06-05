@@ -15,8 +15,8 @@ export declare class CJDropshippingService {
     getProductDetail(pid: string): Promise<any>;
     getProductVariants(pid: string): Promise<any>;
     importProduct(cjProductId: string): Promise<{
-        name: string;
         id: string;
+        name: string;
         createdAt: Date;
         updatedAt: Date;
         slug: string;

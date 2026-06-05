@@ -32,12 +32,17 @@ router.get('/:slug', async (req, res) => {
 });
 // POST /api/products — Admin only
 router.post('/', auth_1.authenticate, auth_1.isAdmin, async (req, res) => {
-    const product = await prisma.product.create({ data: req.body });
+    const product = await prisma.product.create({
+        data: req.body,
+    });
     res.status(201).json(product);
 });
 // PUT /api/products/:id
 router.put('/:id', auth_1.authenticate, auth_1.isAdmin, async (req, res) => {
-    const product = await prisma.product.update({ where: { id: req.params.id }, data: req.body });
+    const product = await prisma.product.update({
+        where: { id: req.params.id },
+        data: req.body,
+    });
     res.json(product);
 });
 exports.default = router;

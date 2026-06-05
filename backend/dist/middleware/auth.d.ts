@@ -1,10 +1,11 @@
-import { Request, Response, NextFunction } from 'express';
+import { Request, RequestHandler } from 'express';
 export interface AuthRequest extends Request {
     user?: {
         id: string;
         role: string;
+        email?: string;
     };
 }
-export declare const authenticate: (req: AuthRequest, res: Response, next: NextFunction) => Response<any, Record<string, any>> | undefined;
-export declare const isAdmin: (req: AuthRequest, res: Response, next: NextFunction) => Response<any, Record<string, any>> | undefined;
+export declare const authenticate: RequestHandler;
+export declare const isAdmin: RequestHandler;
 //# sourceMappingURL=auth.d.ts.map

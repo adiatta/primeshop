@@ -8,9 +8,10 @@ const router = Router();
 const prisma = new PrismaClient();
 
 // GET /api/orders — Mes commandes
-router.get('/', authenticate, async (req: AuthRequest, res) => {
+router.get('/', authenticate, async (req, res) => {
+  const authReq = req as AuthRequest;
   const orders = await prisma.order.findMany({
-    where: { userId: req.user!.id },
+    where: { userId: authReq.user!.id },
     include: {
       items: { include: { product: { select: { name: true, images: true } } } },
       address: true,
@@ -21,9 +22,12 @@ router.get('/', authenticate, async (req: AuthRequest, res) => {
 });
 
 // GET /api/orders/:id — Détail commande
-router.get('/:id', authenticate, async (req: AuthRequest, res) => {
+router.get('/:id', authenticate, async (req, res) => {
+  const authReq = req as AuthRequest;
   const order = await prisma.order.findFirst({
-    where: { id: req.params.id as string, userId: req.user!.id },
+    where: {
+  id: String(req.params.id)
+},
     include: {
       items: { include: { product: true } },
       address: true,

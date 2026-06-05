@@ -64,7 +64,8 @@ router.get('/orders', async (req, res) => {
 });
 
 // PATCH /api/admin/orders/:id — Mettre à jour statut + tracking
-router.patch('/orders/:id', async (req: AuthRequest, res) => {
+router.patch('/orders/:id', async (req, res) => {
+  const authReq = req as AuthRequest;
   const { status, trackingNumber } = req.body;
   const order = await prisma.order.update({
     where: { id: req.params.id as string },

@@ -28,6 +28,7 @@ const wishlist_1 = __importDefault(require("./routes/wishlist"));
 const promo_1 = __importDefault(require("./routes/promo"));
 const admin_1 = __importDefault(require("./routes/admin"));
 const cronJobs_1 = require("./jobs/cronJobs");
+const passport_1 = __importDefault(require("./config/passport"));
 const app = (0, express_1.default)();
 const PORT = parseInt(process.env.PORT || '5000', 10);
 // ── Middlewares ────────────────────────────────────────────
@@ -43,6 +44,7 @@ app.use((0, cors_1.default)({
 // Stripe webhook AVANT express.json (besoin du raw body)
 app.use('/api/payments/webhook', express_1.default.raw({ type: 'application/json' }));
 app.use(express_1.default.json({ limit: '10mb' }));
+app.use(passport_1.default.initialize());
 // Rate limiting
 app.use('/api', rateLimiter_1.globalLimiter);
 app.use('/api/auth', rateLimiter_1.authLimiter);
