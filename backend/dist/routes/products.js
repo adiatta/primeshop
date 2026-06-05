@@ -6,7 +6,7 @@ const auth_1 = require("../middleware/auth");
 const router = (0, express_1.Router)();
 const prisma = new client_1.PrismaClient();
 // GET /api/products
-router.get('/', async (req, res) => {
+router.get('/', auth_1.authenticate, async (req, res) => {
     const { search, category, page = '1', limit = '20' } = req.query;
     const skip = (Number(page) - 1) * Number(limit);
     const where = { active: true };
@@ -40,7 +40,9 @@ router.post('/', auth_1.authenticate, auth_1.isAdmin, async (req, res) => {
 // PUT /api/products/:id
 router.put('/:id', auth_1.authenticate, auth_1.isAdmin, async (req, res) => {
     const product = await prisma.product.update({
-        where: { id: req.params.id },
+        where: {
+            id: String(req.params.id)
+        },
         data: req.body,
     });
     res.json(product);

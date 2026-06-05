@@ -38,7 +38,8 @@ router.get('/:id', authenticate, async (req, res) => {
 });
 
 // POST /api/orders — Créer commande (après paiement)
-router.post('/', authenticate, async (req: AuthRequest, res) => {
+router.post('/', authenticate, async (req, res) => {
+  const authReq = req as AuthRequest;
   const { items, addressId, promoCode, stripePaymentId } = req.body;
 
   const subtotal = items.reduce((s: number, i: any) => s + i.price * i.quantity, 0);
@@ -89,9 +90,12 @@ router.post('/', authenticate, async (req: AuthRequest, res) => {
 });
 
 // GET /api/orders/:id/tracking — Suivi temps réel
-router.get('/:id/tracking', authenticate, async (req: AuthRequest, res) => {
+router.get('/:id/tracking', authenticate, async (req, res) => {
+  const authReq = req as AuthRequest;
   const order = await prisma.order.findFirst({
-    where: { id: req.params.id as string, userId: req.user!.id },
+    where: {
+  id: String(req.params.id)
+},
   });
   if (!order) return res.status(404).json({ error: 'Commande introuvable' });
 
@@ -108,9 +112,12 @@ router.get('/:id/tracking', authenticate, async (req: AuthRequest, res) => {
 });
 
 // POST /api/orders/:id/cancel
-router.post('/:id/cancel', authenticate, async (req: AuthRequest, res) => {
+router.post('/:id/cancel', authenticate, async (req, res) => {
+  const authReq = req as AuthRequest;
   const order = await prisma.order.findFirst({
-    where: { id: req.params.id as string, userId: req.user!.id },
+    where: {
+  id: String(req.params.id)
+},
   });
   if (!order) return res.status(404).json({ error: 'Commande introuvable' });
   if (!['PENDING', 'CONFIRMED'].includes(order.status)) {

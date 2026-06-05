@@ -8,8 +8,9 @@ const router = (0, express_1.Router)();
 const prisma = new client_1.PrismaClient();
 // GET /api/orders — Mes commandes
 router.get('/', auth_1.authenticate, async (req, res) => {
+    const authReq = req;
     const orders = await prisma.order.findMany({
-        where: { userId: req.user.id },
+        where: { userId: authReq.user.id },
         include: {
             items: { include: { product: { select: { name: true, images: true } } } },
             address: true,
@@ -20,8 +21,11 @@ router.get('/', auth_1.authenticate, async (req, res) => {
 });
 // GET /api/orders/:id — Détail commande
 router.get('/:id', auth_1.authenticate, async (req, res) => {
+    const authReq = req;
     const order = await prisma.order.findFirst({
-        where: { id: req.params.id, userId: req.user.id },
+        where: {
+            id: String(req.params.id)
+        },
         include: {
             items: { include: { product: true } },
             address: true,
