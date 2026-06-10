@@ -11,6 +11,11 @@ export function Navbar() {
   const { openAuth, openCart } = useUIStore();
   const { user, logout }       = useAuthStore();
   const count = useCartStore(s => s.count());
+  const [mounted, setMounted] = useState(false);
+
+useEffect(() => {
+  setMounted(true);
+}, []);
 
   useEffect(() => {
     const fn = () => setScrolled(window.scrollY > 60);
@@ -51,9 +56,27 @@ export function Navbar() {
 
         <button onClick={openCart} style={{ position: 'relative', background: '#161a22', border: '1px solid #1e2433', borderRadius: 9999, width: 44, height: 44, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontSize: 18, cursor: 'pointer', color: '#f0f4ff' }}>
           🛒
-          {count > 0 && (
-            <span style={{ position: 'absolute', top: -4, right: -4, background: '#2563eb', color: '#fff', fontSize: 10, fontWeight: 800, width: 18, height: 18, borderRadius: '50%', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>{count}</span>
-          )}
+          {mounted && count > 0 && (
+  <span
+    style={{
+      position: "absolute",
+      top: -4,
+      right: -4,
+      background: "#2563eb",
+      color: "#fff",
+      fontSize: 10,
+      fontWeight: 800,
+      width: 18,
+      height: 18,
+      borderRadius: "999px",
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center",
+    }}
+  >
+    {count}
+  </span>
+)}
         </button>
       </div>
     </nav>

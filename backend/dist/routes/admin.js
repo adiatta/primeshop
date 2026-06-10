@@ -1,127 +1,342 @@
 "use strict";
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
 Object.defineProperty(exports, "__esModule", { value: true });
 const express_1 = require("express");
 const client_1 = require("@prisma/client");
 const auth_1 = require("../middleware/auth");
 const dropshippingService_1 = require("../services/dropshippingService");
 const orderTrackingService_1 = require("../services/orderTrackingService");
+const stripe_1 = __importDefault(require("stripe"));
 const router = (0, express_1.Router)();
 const prisma = new client_1.PrismaClient();
+const stripe = new stripe_1.default(process.env.STRIPE_SECRET_KEY ?? '');
 // Toutes les routes admin sont protégées
 router.use(auth_1.authenticate, auth_1.isAdmin);
-// GET /api/admin/stats
+// ── GET /api/admin/stats ─────────────────────────────────────
 router.get('/stats', async (req, res) => {
-    const [totalOrders, totalUsers, revenue, pendingOrders] = await Promise.all([
-        prisma.order.count(),
-        prisma.user.count(),
-        prisma.order.aggregate({
-            where: { status: { in: ['CONFIRMED', 'PROCESSING', 'SHIPPED', 'DELIVERED'] } },
-            _sum: { total: true },
-        }),
-        prisma.order.count({ where: { status: 'PENDING' } }),
-    ]);
-    res.json({
-        totalOrders, totalUsers,
-        revenue: revenue._sum.total || 0,
-        pendingOrders,
-    });
+    try {
+        const [totalOrders, totalUsers, pendingOrders, revenueData] = await Promise.all([
+            prisma.order.count(),
+            prisma.user.count(),
+            prisma.order.count({ where: { status: 'PENDING' } }),
+            prisma.order.aggregate({
+                where: { status: { in: ['CONFIRMED', 'PROCESSING', 'SHIPPED', 'DELIVERED'] } },
+                _sum: { total: true },
+            }),
+        ]);
+        res.json({
+            totalOrders,
+            totalUsers,
+            pendingOrders,
+            revenue: revenueData._sum.total ?? 0,
+        });
+    }
+    catch (err) {
+        res.status(500).json({ error: err.message });
+    }
 });
-// GET /api/admin/users
-router.get('/users', async (req, res) => {
-    const users = await prisma.user.findMany({
-        select: {
-            id: true, name: true, email: true,
-            role: true, createdAt: true,
-            _count: { select: { orders: true } },
-        },
-        orderBy: { createdAt: 'desc' },
-    });
-    res.json(users);
-});
-// GET /api/admin/orders
+// ── GET /api/admin/orders ────────────────────────────────────
 router.get('/orders', async (req, res) => {
-    const { status, page = '1', limit = '20' } = req.query;
-    const where = {};
-    if (status)
-        where.status = status;
-    const [orders, total] = await Promise.all([
-        prisma.order.findMany({
-            where,
-            include: {
-                user: { select: { name: true, email: true } },
-                items: { include: { product: { select: { name: true } } } },
-                address: true,
+    try {
+        const { status, page = '1', limit = '50' } = req.query;
+        const where = {};
+        if (status && status !== 'ALL')
+            where.status = String(status);
+        const [orders, total] = await Promise.all([
+            prisma.order.findMany({
+                where,
+                include: {
+                    user: { select: { id: true, name: true, email: true } },
+                    items: { include: { product: { select: { name: true, images: true } } } },
+                    address: true,
+                },
+                orderBy: { createdAt: 'desc' },
+                skip: (Number(page) - 1) * Number(limit),
+                take: Number(limit),
+            }),
+            prisma.order.count({ where }),
+        ]);
+        res.json({ orders, total, pages: Math.ceil(total / Number(limit)) });
+    }
+    catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+// ── PATCH /api/admin/orders/:id — Mettre à jour statut ───────
+router.patch('/orders/:id', async (req, res) => {
+    try {
+        const { status, trackingNumber } = req.body;
+        const order = await prisma.order.update({
+            where: { id: String(req.params.id) },
+            data: {
+                ...(status && { status }),
+                ...(trackingNumber && { trackingNumber }),
+            },
+            include: { user: true },
+        });
+        res.json(order);
+    }
+    catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+// ── GET /api/admin/users ─────────────────────────────────────
+router.get('/users', async (req, res) => {
+    try {
+        const users = await prisma.user.findMany({
+            select: {
+                id: true, name: true, email: true,
+                role: true, createdAt: true,
+                _count: { select: { orders: true } },
             },
             orderBy: { createdAt: 'desc' },
-            skip: (Number(page) - 1) * Number(limit),
-            take: Number(limit),
-        }),
-        prisma.order.count({ where }),
-    ]);
-    res.json({ orders, total, pages: Math.ceil(total / Number(limit)) });
-});
-// PATCH /api/admin/orders/:id — Mettre à jour statut + tracking
-router.patch('/orders/:id', async (req, res) => {
-    const authReq = req;
-    const { status, trackingNumber } = req.body;
-    const order = await prisma.order.update({
-        where: { id: req.params.id },
-        data: { ...(status && { status }), ...(trackingNumber && { trackingNumber }) },
-        include: { user: true },
-    });
-    // Email si expédié manuellement
-    if (status === 'SHIPPED' && trackingNumber) {
-        // await emailService.sendShippingNotification(order.user.email, {...})
+        });
+        res.json(users);
     }
-    res.json(order);
+    catch (err) {
+        res.status(500).json({ error: err.message });
+    }
 });
-// POST /api/admin/dropshipping/search — Chercher produit CJ
-router.post('/dropshipping/search', async (req, res) => {
-    const { keyword, page } = req.body;
-    const results = await dropshippingService_1.cjService.searchProducts(keyword, page);
-    res.json(results);
-});
-// POST /api/admin/dropshipping/import — Importer produit CJ
-router.post('/dropshipping/import', async (req, res) => {
-    const { cjProductId } = req.body;
-    const product = await dropshippingService_1.cjService.importProduct(cjProductId);
-    res.json({ message: 'Produit importé avec succès', product });
-});
-// POST /api/admin/dropshipping/sync-stock — Sync stock CJ
-router.post('/dropshipping/sync-stock', async (req, res) => {
-    await dropshippingService_1.cjService.syncStock();
-    res.json({ message: 'Stock synchronisé' });
-});
-// POST /api/admin/dropshipping/fulfill/:orderId — Passer commande CJ
-router.post('/dropshipping/fulfill/:orderId', async (req, res) => {
-    const result = await orderTrackingService_1.trackingService.fulfillOrder(req.params.orderId);
-    res.json({ message: 'Commande transmise à CJ', result });
-});
-// POST /api/admin/dropshipping/sync-tracking — Sync tracking toutes commandes
-router.post('/dropshipping/sync-tracking', async (req, res) => {
-    await orderTrackingService_1.trackingService.syncAllTracking();
-    res.json({ message: 'Tracking synchronisé' });
-});
-// GET /api/admin/promos
+// ── GET /api/admin/promos ────────────────────────────────────
 router.get('/promos', async (req, res) => {
-    const promos = await prisma.promoCode.findMany({ orderBy: { createdAt: 'desc' } });
-    res.json(promos);
+    try {
+        const promos = await prisma.promoCode.findMany({
+            orderBy: { createdAt: 'desc' },
+        });
+        res.json(promos);
+    }
+    catch (err) {
+        res.status(500).json({ error: err.message });
+    }
 });
-// POST /api/admin/promos
+// ── POST /api/admin/promos ───────────────────────────────────
 router.post('/promos', async (req, res) => {
-    const { code, discount, type, maxUses, expiresAt } = req.body;
-    const promo = await prisma.promoCode.create({
-        data: { code, discount, type: type || 'percentage', maxUses, expiresAt: expiresAt ? new Date(expiresAt) : null, active: true },
-    });
-    res.status(201).json(promo);
+    try {
+        const { code, discount, type, maxUses, expiresAt } = req.body;
+        const promo = await prisma.promoCode.create({
+            data: {
+                code,
+                discount: Number(discount),
+                type: type || 'percentage',
+                maxUses: maxUses ? Number(maxUses) : null,
+                expiresAt: expiresAt ? new Date(expiresAt) : null,
+                active: true,
+            },
+        });
+        res.status(201).json(promo);
+    }
+    catch (err) {
+        res.status(500).json({ error: err.message });
+    }
 });
-// PATCH /api/admin/promos/:code
+// ── PATCH /api/admin/promos/:code ────────────────────────────
 router.patch('/promos/:code', async (req, res) => {
-    const promo = await prisma.promoCode.update({
-        where: { code: req.params.code },
-        data: req.body,
-    });
-    res.json(promo);
+    try {
+        const promo = await prisma.promoCode.update({
+            where: { code: String(req.params.code) },
+            data: req.body,
+        });
+        res.json(promo);
+    }
+    catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+// ── GET /api/admin/payments — Historique Stripe ──────────────
+router.get('/payments', async (req, res) => {
+    try {
+        const { limit = '20', starting_after } = req.query;
+        const params = {
+            limit: Number(limit),
+        };
+        if (starting_after) {
+            params.starting_after = String(starting_after);
+        }
+        const intents = await stripe.paymentIntents.list(params);
+        // Enrichir avec les données de commande en BDD
+        const enriched = await Promise.all(intents.data.map(async (pi) => {
+            const order = await prisma.order.findFirst({
+                where: { stripePaymentId: pi.id },
+                include: { user: { select: { name: true, email: true } } },
+            });
+            return {
+                id: pi.id,
+                amount: pi.amount / 100,
+                currency: pi.currency.toUpperCase(),
+                status: pi.status,
+                created: new Date(pi.created * 1000).toISOString(),
+                customer: order?.user?.name ?? pi.metadata?.userId ?? 'Inconnu',
+                email: order?.user?.email ?? '',
+                orderId: order?.id ?? null,
+                orderStatus: order?.status ?? null,
+                refunded: pi.amount_received < pi.amount,
+            };
+        }));
+        res.json({
+            payments: enriched,
+            hasMore: intents.has_more,
+            lastId: intents.data[intents.data.length - 1]?.id,
+        });
+    }
+    catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+// ── POST /api/admin/payments/refund — Rembourser ─────────────
+router.post('/payments/refund', async (req, res) => {
+    try {
+        const { paymentIntentId, amount, reason = 'requested_by_customer' } = req.body;
+        if (!paymentIntentId)
+            return res.status(400).json({ error: 'paymentIntentId requis' });
+        const pi = await stripe.paymentIntents.retrieve(paymentIntentId);
+        if (!pi.latest_charge)
+            return res.status(400).json({ error: 'Aucune charge trouvée' });
+        const refundParams = {
+            charge: String(pi.latest_charge),
+            reason: reason,
+        };
+        if (amount) {
+            refundParams.amount = Math.round(Number(amount) * 100);
+        }
+        const refund = await stripe.refunds.create(refundParams);
+        // Mettre à jour le statut commande
+        if (refund.status === 'succeeded') {
+            await prisma.order.updateMany({
+                where: { stripePaymentId: paymentIntentId },
+                data: { status: 'REFUNDED' },
+            });
+        }
+        res.json({
+            success: true,
+            refundId: refund.id,
+            amount: refund.amount / 100,
+            status: refund.status,
+        });
+    }
+    catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+// ── GET /api/admin/payments/stats — Stats Stripe ─────────────
+router.get('/payments/stats', async (req, res) => {
+    try {
+        const thirtyDaysAgo = Math.floor(Date.now() / 1000) - 30 * 24 * 3600;
+        const intents = await stripe.paymentIntents.list({
+            limit: 100,
+            created: { gte: thirtyDaysAgo },
+        });
+        const succeeded = intents.data.filter(p => p.status === 'succeeded');
+        const revenue = succeeded.reduce((s, p) => s + p.amount_received, 0) / 100;
+        const refunded = intents.data.filter(p => p.amount_received < p.amount).length;
+        res.json({
+            total: intents.data.length,
+            succeeded: succeeded.length,
+            revenue,
+            refunded,
+            avgTicket: succeeded.length ? revenue / succeeded.length : 0,
+        });
+    }
+    catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+// ── Dropshipping ─────────────────────────────────────────────
+// ── Statut API CJ ────────────────────────────────────────────
+router.get('/dropshipping/status', async (req, res) => {
+    try {
+        const token = await dropshippingService_1.cjService.getToken();
+        res.json({ connected: !!token, message: token ? 'CJ API connectée' : 'Non connectée' });
+    }
+    catch (err) {
+        res.json({ connected: false, message: err.message });
+    }
+});
+// ── Recherche produits CJ ────────────────────────────────────
+router.post('/dropshipping/search', async (req, res) => {
+    try {
+        const { keyword, page = 1 } = req.body;
+        if (!keyword)
+            return res.status(400).json({ error: 'Mot-clé requis' });
+        const results = await dropshippingService_1.cjService.searchProducts(String(keyword), Number(page));
+        res.json(results);
+    }
+    catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+// ── Import produit CJ → BDD ──────────────────────────────────
+router.post('/dropshipping/import', async (req, res) => {
+    try {
+        const { cjProductId } = req.body;
+        if (!cjProductId)
+            return res.status(400).json({ error: 'cjProductId requis' });
+        const product = await dropshippingService_1.cjService.importProduct(String(cjProductId));
+        res.json({ success: true, product });
+    }
+    catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+// ── Sync stock tous les produits CJ ─────────────────────────
+router.post('/dropshipping/sync-stock', async (req, res) => {
+    try {
+        await dropshippingService_1.cjService.syncStock();
+        const count = await prisma.product.count({ where: { cjProductId: { not: null } } });
+        res.json({ success: true, message: `${count} produits synchronisés` });
+    }
+    catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+// ── Liste produits importés ──────────────────────────────────
+router.get('/dropshipping/products', async (req, res) => {
+    try {
+        const products = await prisma.product.findMany({
+            where: { cjProductId: { not: null } },
+            select: { id: true, name: true, price: true, stock: true, cjProductId: true, active: true, images: true },
+            orderBy: { createdAt: 'desc' },
+        });
+        res.json(products);
+    }
+    catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+// ── Fulfillment commande via CJ ──────────────────────────────
+router.post('/dropshipping/fulfill/:orderId', async (req, res) => {
+    try {
+        const result = await orderTrackingService_1.trackingService.fulfillOrder(String(req.params.orderId));
+        res.json({ success: true, result });
+    }
+    catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+// ── Sync tracking toutes les commandes en transit ────────────
+router.post('/dropshipping/sync-tracking', async (req, res) => {
+    try {
+        await orderTrackingService_1.trackingService.syncAllTracking();
+        const count = await prisma.order.count({
+            where: { status: { in: ['CONFIRMED', 'PROCESSING', 'SHIPPED'] } },
+        });
+        res.json({ success: true, message: `${count} commandes mises à jour` });
+    }
+    catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+// ── Méthodes de livraison CJ ─────────────────────────────────
+router.post('/dropshipping/shipping-methods', async (req, res) => {
+    try {
+        const { pid, vid, country = 'FR', quantity = 1 } = req.body;
+        const methods = await dropshippingService_1.cjService.getShippingMethods(pid, vid, country, quantity);
+        res.json(methods);
+    }
+    catch (err) {
+        res.status(500).json({ error: err.message });
+    }
 });
 exports.default = router;
 //# sourceMappingURL=admin.js.map

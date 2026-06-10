@@ -1,4 +1,4 @@
-
+import { validateAddress } from '../middleware/validateAddress';
 import { Router } from 'express';
 import { PrismaClient } from '@prisma/client';
 import { authenticate } from '../middleware/auth';
@@ -7,6 +7,71 @@ import { cjService } from '../services/dropshippingService';
 
 const router = Router();
 const prisma = new PrismaClient();
+
+
+// GET /api/orders/:id/tracking — Suivi en temps réel
+router.get('/:id/tracking', authenticate, async (req, res) => {
+  try {
+    const authReq = req as AuthRequest;
+    const order = await prisma.order.findFirst({
+      where: { id: String(req.params.id), userId: authReq.user!.id },
+      include: { address: true },
+    });
+    if (!order) return res.status(404).json({ error: 'Commande introuvable' });
+
+    // Étapes calculées depuis le statut
+    const statusTimeline = buildTimeline(order);
+
+    if (!order.trackingNumber) {
+      return res.json({
+        orderId:        order.id,
+        status:         order.status,
+        trackingNumber: null,
+        timeline:       statusTimeline,
+        events:         [],
+        message:        'Numéro de suivi disponible après expédition',
+      });
+    }
+
+    // Fetch tracking CJ en temps réel
+    let events: any[] = [];
+    try {
+      events = await cjService.getShippingTracking(order.trackingNumber, 'CJPacket');
+    } catch {
+      // CJ indisponible — on retourne quand même le statut
+    }
+
+    res.json({
+      orderId:        order.id,
+      status:         order.status,
+      trackingNumber: order.trackingNumber,
+      timeline:       statusTimeline,
+      events,
+    });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+function buildTimeline(order: any) {
+  const steps = ['PENDING','CONFIRMED','PROCESSING','SHIPPED','DELIVERED'];
+  const labels: Record<string, string> = {
+    PENDING:    'Commande reçue',
+    CONFIRMED:  'Commande confirmée',
+    PROCESSING: 'En préparation',
+    SHIPPED:    'Expédiée',
+    DELIVERED:  'Livrée',
+  };
+  const curIdx = steps.indexOf(order.status);
+  return steps.map((s, i) => ({
+    status:    s,
+    label:     labels[s],
+    done:      i <= curIdx,
+    active:    i === curIdx,
+    date:      i <= curIdx ? order.updatedAt : null,
+  }));
+}
+
 
 // ── GET /api/orders — Mes commandes ──────────────────────────
 router.get('/', authenticate, async (req, res) => {

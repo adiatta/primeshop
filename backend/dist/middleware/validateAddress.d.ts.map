@@ -1,0 +1,1 @@
+{"version":3,"file":"validateAddress.d.ts","sourceRoot":"","sources":["../../src/middleware/validateAddress.ts"],"names":[],"mappings":"AAAA,OAAO,EAAE,OAAO,EAAE,QAAQ,EAAE,YAAY,EAAE,MAAM,SAAS,CAAC;AAiB1D,wBAAgB,eAAe,CAAC,GAAG,EAAE,OAAO,EAAE,GAAG,EAAE,QAAQ,EAAE,IAAI,EAAE,YAAY,6CAuB9E"}

@@ -117,7 +117,7 @@ export function CheckoutForm({ total, address }: Props) {
       <PaymentElement
         options={{
           layout: { type: 'tabs', defaultCollapsed: false },
-          fields: { billingDetails: 'never' }, // on envoie les détails manuellement
+          fields: { billingDetails: 'auto' }, // on envoie les détails manuellement
         }}
       />
       <button

@@ -14,11 +14,14 @@ const STATUS_CONFIG: Record<string, { label: string; bg: string; color: string }
   CANCELLED:  { label: 'Annulée',       bg: '#3b1111', color: '#f87171' },
 };
 
+// Ajouter ces items dans NAV :
 const NAV = [
-  { id: 'dashboard', icon: '📊', label: 'Dashboard'    },
-  { id: 'orders',    icon: '📦', label: 'Commandes'    },
-  { id: 'users',     icon: '👥', label: 'Utilisateurs' },
-  { id: 'promos',    icon: '🎁', label: 'Promotions'   },
+  { id: 'dashboard',    icon: '📊', label: 'Dashboard',      href: '/admin'              },
+  { id: 'orders',       icon: '📦', label: 'Commandes',       href: '/admin/orders'       },
+  { id: 'users',        icon: '👥', label: 'Utilisateurs',    href: '/admin/users'        },
+  { id: 'promos',       icon: '🎁', label: 'Promotions',      href: '/admin/promos'       },
+  { id: 'dropshipping', icon: '🚚', label: 'Dropshipping',    href: '/admin/dropshipping' },
+  { id: 'payments',     icon: '💳', label: 'Paiements',       href: '/admin/payments'     },
 ];
 
 function Badge({ status }: { status: string }) {
