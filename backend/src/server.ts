@@ -38,6 +38,10 @@ app.set("trust proxy", 1);
 
 app.use(express.json());
 
+app.use(rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 100,
+}));
 
 // ── Middlewares ────────────────────────────────────────────
 app.use(helmet());
