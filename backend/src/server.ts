@@ -33,6 +33,12 @@ import passport from './config/passport';
 const app  = express();
 const PORT = parseInt(process.env.PORT || '5000', 10);
 
+// IMPORTANT pour Railway / Render / Heroku
+app.set("trust proxy", 1);
+
+app.use(express.json());
+
+
 // ── Middlewares ────────────────────────────────────────────
 app.use(helmet());
 app.use(compression() as any);
